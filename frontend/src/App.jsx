@@ -5,10 +5,10 @@ import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
 
 const modules = [
-  { path: '/analyze', label: 'Document Analyzer', icon: '🔍', desc: 'Extrae y estructura contenido' },
-  { path: '/translate', label: 'AI Translator', icon: '🌐', desc: 'Traduce preservando layout' },
-  { path: '/convert', label: 'Format Converter', icon: '🔄', desc: 'Convierte entre formatos' },
-  { path: '/qa', label: 'QA Checker', icon: '✅', desc: 'Detecta inconsistencias y errores' },
+  { path: '/analyze',  label: 'Document Analyzer', icon: '🔍', desc: 'Extrae y estructura contenido',       ready: false },
+  { path: '/translate',label: 'AI Translator',      icon: '🌐', desc: 'Traduce preservando layout',          ready: false },
+  { path: '/convert',  label: 'Format Converter',   icon: '🔄', desc: 'Convierte entre formatos',            ready: true  },
+  { path: '/qa',       label: 'QA Checker',         icon: '✅', desc: 'Detecta inconsistencias y errores',   ready: false },
 ]
 
 export default function App() {
@@ -24,11 +24,11 @@ export default function App() {
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         <Routes>
-          <Route path="/" element={<Home modules={modules} />} />
-          <Route path="/analyze" element={<Analyzer />} />
-          <Route path="/translate" element={<Translator />} />
-          <Route path="/convert" element={<Converter />} />
-          <Route path="/qa" element={<QAChecker />} />
+          <Route path="/"         element={<Home modules={modules} />} />
+          <Route path="/analyze"  element={<Analyzer />} />
+          <Route path="/translate"element={<Translator />} />
+          <Route path="/convert"  element={<Converter />} />
+          <Route path="/qa"       element={<QAChecker />} />
         </Routes>
       </main>
     </div>
@@ -50,9 +50,10 @@ function Home({ modules }) {
             <div className="text-3xl mb-3">{m.icon}</div>
             <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">{m.label}</h3>
             <p className="text-sm text-gray-500 mt-1">{m.desc}</p>
-            <span className="inline-block mt-3 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
-              Próximamente
-            </span>
+            {m.ready
+              ? <span className="inline-block mt-3 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Disponible</span>
+              : <span className="inline-block mt-3 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Próximamente</span>
+            }
           </NavLink>
         ))}
       </div>
