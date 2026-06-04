@@ -17,6 +17,16 @@ export async function getConvertFormats(ext) {
   return data.targets
 }
 
+export async function qaCheckDocument(file, onProgress) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/qa/', form, {
+    onUploadProgress: e => onProgress?.(Math.round((e.loaded / e.total) * 60)),
+  })
+  onProgress?.(100)
+  return data
+}
+
 export async function convertDocument(file, targetFormat, onProgress) {
   const form = new FormData()
   form.append('file', file)

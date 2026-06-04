@@ -64,3 +64,46 @@ def _vision_messages(images: list, filename: str) -> list:
             "source": {"type": "base64", "media_type": "image/png", "data": img_b64},
         })
     return [{"role": "user", "content": content}]
+
+
+_QA_SYSTEM = """You are a document quality assurance expert. Analyze documents for issues and return ONLY valid JSON — no markdown, no explanation.
+
+Response schema:
+{
+  "overall_score": integer 0-100,
+  "summary": "one sentence summary of document quality",
+  "issues": [
+    {
+      "severity": "critical|warning|suggestion",
+      "category": "placeholder|grammar|inconsistency|missing_section|formatting|other",
+      "description": "clear description of the issue",
+      "location": "where in the document (section, page, paragraph)"
+    }
+  ]
+}
+
+Severity guide:
+- critical: unfilled placeholders ([NAME], {{FIELD}}, TBD, etc.), missing required sections, broken references
+- warning: grammar/spelling errors, date/number inconsistencies, contradicting statements
+- suggestion: style improvements, unclear phrasing, optional missing content"""
+
+
+async def qa_check(content, file_type: str, filename: str) -> dict:
+    if isinstance(content, list):
+        text_parts = [{"type": "text", "text": f"Check quality of this scanned document '{filename}':"}]
+        for img_b64 in content[:5]:
+            text_parts.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}})
+        messages = [{"role": "user", "content": text_parts}]
+    else:
+        truncated = content[:50_000]
+        messages = [{"role": "user", "content": f"Check quality of this {file_type.upper()} document named '{filename}':\n\n{truncated}"}]
+
+    response = await _client.messages.create(
+        model=MODEL,
+        max_tokens=2048,
+        system=_QA_SYSTEM,
+        messages=messages,
+    )
+
+    raw = response.content[0].text.strip()
+    return json.loads(raw)
