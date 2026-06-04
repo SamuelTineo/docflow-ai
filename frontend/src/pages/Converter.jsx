@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import FileDropzone from '../components/FileDropzone'
 import { convertDocument, getConvertFormats } from '../services/api'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const FORMAT_LABELS = {
   pdf:  'PDF',
@@ -17,6 +18,7 @@ const ACCEPT = {
 }
 
 export default function Converter() {
+  const { t } = useLanguage()
   const [file, setFile] = useState(null)
   const [formats, setFormats] = useState([])
   const [target, setTarget] = useState(null)
@@ -37,7 +39,7 @@ export default function Converter() {
       setFormats(available)
     } catch {
       setFormats([])
-      setError('Formato de archivo no soportado.')
+      setError(t('convert_err'))
     }
   }, [])
 
@@ -54,7 +56,7 @@ export default function Converter() {
       setResult({ url, name: match ? match[1] : `converted.${target}` })
       setStatus('done')
     } catch (e) {
-      setError(e.response?.data?.detail || 'Error durante la conversión.')
+      setError(e.response?.data?.detail || t('convert_err'))
       setStatus('error')
     }
   }
@@ -67,12 +69,12 @@ export default function Converter() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Format Converter</h2>
-        <p className="text-gray-500 mt-1">Convertí documentos entre distintos formatos</p>
+        <h2 className="text-2xl font-semibold text-gray-800">{t('convert_title')}</h2>
+        <p className="text-gray-500 mt-1">{t('convert_subtitle')}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        <FileDropzone onFile={handleFile} accept={ACCEPT} label="Subí el archivo a convertir" />
+        <FileDropzone onFile={handleFile} accept={ACCEPT} label={t('convert_drop')} />
 
         {file && (
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -87,7 +89,7 @@ export default function Converter() {
 
         {formats.length > 0 && (
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Convertir a:</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t('convert_to')}</p>
             <div className="flex flex-wrap gap-2">
               {formats.map(f => (
                 <button
@@ -112,8 +114,8 @@ export default function Converter() {
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
           >
             {status === 'loading'
-              ? `Convirtiendo... ${progress}%`
-              : `Convertir a ${FORMAT_LABELS[target] || target}`}
+              ? `${t('convert_loading')} ${progress}%`
+              : `${t('convert_btn')} ${FORMAT_LABELS[target] || target}`}
           </button>
         )}
 
@@ -134,7 +136,7 @@ export default function Converter() {
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-4">
             <span className="text-2xl">✅</span>
             <div className="flex-1">
-              <p className="text-sm font-medium text-green-800">Conversión completada</p>
+              <p className="text-sm font-medium text-green-800">{t('convert_done')}</p>
               <p className="text-xs text-green-600 truncate">{result.name}</p>
             </div>
             <a
@@ -142,7 +144,7 @@ export default function Converter() {
               download={result.name}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium"
             >
-              Descargar
+              {t('btn_download')}
             </a>
           </div>
         )}

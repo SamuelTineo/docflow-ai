@@ -1,61 +1,125 @@
-import { Routes, Route, NavLink } from 'react-router-dom'
+import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
 import Analyzer from './pages/Analyzer'
 import Translator from './pages/Translator'
 import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
+import { useLanguage } from './contexts/LanguageContext'
 
-const modules = [
-  { path: '/analyze',  label: 'Document Analyzer', icon: '🔍', desc: 'Extrae y estructura contenido',       ready: true  },
-  { path: '/translate',label: 'AI Translator',      icon: '🌐', desc: 'Traduce preservando layout',          ready: true  },
-  { path: '/convert',  label: 'Format Converter',   icon: '🔄', desc: 'Convierte entre formatos',            ready: true  },
-  { path: '/qa',       label: 'QA Checker',         icon: '✅', desc: 'Detecta inconsistencias y errores',   ready: true  },
+const MODULES = [
+  { path: '/analyze',   icon: '🔍', color: 'blue',    labelKey: 'mod_analyze_label',   descKey: 'mod_analyze_desc',   actionKey: 'mod_analyze_action'   },
+  { path: '/translate', icon: '🌐', color: 'violet',  labelKey: 'mod_translate_label', descKey: 'mod_translate_desc', actionKey: 'mod_translate_action' },
+  { path: '/convert',   icon: '🔄', color: 'emerald', labelKey: 'mod_convert_label',   descKey: 'mod_convert_desc',   actionKey: 'mod_convert_action'   },
+  { path: '/qa',        icon: '✅', color: 'amber',   labelKey: 'mod_qa_label',        descKey: 'mod_qa_desc',        actionKey: 'mod_qa_action'        },
 ]
 
+const LANGS = [
+  { code: 'es', flag: '🇦🇷', abbr: 'ESP' },
+  { code: 'en', flag: '🇺🇸', abbr: 'ENG' },
+  { code: 'pt', flag: '🇧🇷', abbr: 'POR' },
+]
+
+const COLOR = {
+  blue:    { bg: 'bg-blue-50',   border: 'hover:border-blue-400',   btn: 'bg-blue-600 hover:bg-blue-700',   icon: 'bg-blue-100'   },
+  violet:  { bg: 'bg-violet-50', border: 'hover:border-violet-400', btn: 'bg-violet-600 hover:bg-violet-700', icon: 'bg-violet-100' },
+  emerald: { bg: 'bg-emerald-50',border: 'hover:border-emerald-400',btn: 'bg-emerald-600 hover:bg-emerald-700',icon: 'bg-emerald-100'},
+  amber:   { bg: 'bg-amber-50',  border: 'hover:border-amber-400',  btn: 'bg-amber-500 hover:bg-amber-600',  icon: 'bg-amber-100'  },
+}
+
 export default function App() {
+  const location = useLocation()
+  const isHome = location.pathname === '/'
+  const { lang, setLang, t } = useLanguage()
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <span className="text-2xl">📄</span>
-          <h1 className="text-xl font-bold text-gray-900">DocFlow AI</h1>
-          <span className="text-sm text-gray-400 ml-1">Document Processing</span>
+          <Link to="/" className="flex items-center gap-2 group">
+            <span className="text-2xl">📄</span>
+            <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">DocFlow AI</span>
+          </Link>
+          {!isHome && (
+            <nav className="flex items-center gap-1 ml-4">
+              {MODULES.map(m => (
+                <NavLink
+                  key={m.path}
+                  to={m.path}
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  {m.icon} {t(m.labelKey)}
+                </NavLink>
+              ))}
+            </nav>
+          )}
+          <div className="ml-auto flex items-center gap-1">
+            {LANGS.map(l => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  lang === l.code
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {l.abbr}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-10">
         <Routes>
-          <Route path="/"         element={<Home modules={modules} />} />
-          <Route path="/analyze"  element={<Analyzer />} />
-          <Route path="/translate"element={<Translator />} />
-          <Route path="/convert"  element={<Converter />} />
-          <Route path="/qa"       element={<QAChecker />} />
+          <Route path="/"          element={<Home />} />
+          <Route path="/analyze"   element={<Analyzer />} />
+          <Route path="/translate" element={<Translator />} />
+          <Route path="/convert"   element={<Converter />} />
+          <Route path="/qa"        element={<QAChecker />} />
         </Routes>
       </main>
     </div>
   )
 }
 
-function Home({ modules }) {
+function Home() {
+  const { t } = useLanguage()
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-2">¿Qué querés hacer?</h2>
-      <p className="text-gray-500 mb-8">Seleccioná un módulo para comenzar</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {modules.map(m => (
-          <NavLink
-            key={m.path}
-            to={m.path}
-            className="bg-white border border-gray-200 rounded-xl p-6 hover:border-blue-400 hover:shadow-md transition-all group"
-          >
-            <div className="text-3xl mb-3">{m.icon}</div>
-            <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">{m.label}</h3>
-            <p className="text-sm text-gray-500 mt-1">{m.desc}</p>
-            {m.ready
-              ? <span className="inline-block mt-3 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Disponible</span>
-              : <span className="inline-block mt-3 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Próximamente</span>
-            }
-          </NavLink>
-        ))}
+      {/* Hero */}
+      <div className="text-center mb-12">
+        <div className="text-5xl mb-4">📄</div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">DocFlow AI</h1>
+        <p className="text-lg text-gray-500 max-w-xl mx-auto">{t('hero_subtitle')}</p>
+      </div>
+
+      {/* Module cards — 2×2 grid of squares */}
+      <div className="grid grid-cols-2 gap-5">
+        {MODULES.map(m => {
+          const c = COLOR[m.color]
+          return (
+            <Link
+              key={m.path}
+              to={m.path}
+              className={`min-h-[260px] bg-white border border-gray-200 rounded-2xl p-6 ${c.border} hover:shadow-lg transition-all flex flex-col justify-between group`}
+            >
+              <div>
+                <div className={`${c.icon} w-14 h-14 rounded-xl flex items-center justify-center text-3xl mb-4`}>
+                  {m.icon}
+                </div>
+                <h3 className="font-semibold text-gray-900 text-lg leading-tight">{t(m.labelKey)}</h3>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{t(m.descKey)}</p>
+              </div>
+              <span className={`${c.btn} text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors text-center mt-4`}>
+                {t(m.actionKey)} →
+              </span>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

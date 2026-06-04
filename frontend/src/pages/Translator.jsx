@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import FileDropzone from '../components/FileDropzone'
 import { translateDocument } from '../services/api'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const ACCEPT = {
   'application/pdf': ['.pdf'],
@@ -26,6 +27,7 @@ const STEPS = ['Cargando archivo...', 'Extrayendo contenido...', 'Traduciendo co
 const OUTPUT_LABEL = { docx: 'DOCX', pptx: 'PPTX', pdf: 'PDF' }
 
 export default function Translator() {
+  const { t } = useLanguage()
   const [file, setFile]           = useState(null)
   const [targetLang, setTargetLang] = useState('en')
   const [status, setStatus]       = useState('idle')
@@ -34,6 +36,7 @@ export default function Translator() {
   const [error, setError]         = useState(null)
 
   const stepIndex = progress < 20 ? 0 : progress < 50 ? 1 : progress < 85 ? 2 : 3
+  const STEPS = t('translate_steps')
 
   const handleFile = useCallback(f => {
     setFile(f); setDownload(null); setError(null); setStatus('idle'); setProgress(0)
@@ -47,7 +50,7 @@ export default function Translator() {
       setDownload({ blob, filename })
       setStatus('done')
     } catch (e) {
-      setError(e.response?.data?.detail || 'Error durante la traducción.')
+      setError(e.response?.data?.detail || t('translate_err'))
       setStatus('error')
     }
   }
@@ -72,12 +75,12 @@ export default function Translator() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">AI Translator</h2>
-        <p className="text-gray-500 mt-1">Traduce documentos preservando su estructura y formato</p>
+        <h2 className="text-2xl font-semibold text-gray-800">{t('translate_title')}</h2>
+        <p className="text-gray-500 mt-1">{t('translate_subtitle')}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        <FileDropzone onFile={handleFile} accept={ACCEPT} label="Subí el documento a traducir" />
+        <FileDropzone onFile={handleFile} accept={ACCEPT} label={t('drop_label_translate')} />
 
         {file && (
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -92,7 +95,7 @@ export default function Translator() {
 
         {/* Language selector */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Idioma destino</p>
+          <p className="text-sm font-medium text-gray-700 mb-2">{t('translate_lang_label')}</p>
           <div className="grid grid-cols-4 gap-2">
             {LANGUAGES.map(lang => (
               <button
@@ -117,7 +120,7 @@ export default function Translator() {
             disabled={status === 'loading'}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
           >
-            {status === 'loading' ? STEPS[stepIndex] : `Traducir a ${langLabel}`}
+            {status === 'loading' ? STEPS[stepIndex] : `${t('translate_btn')} ${langLabel}`}
           </button>
         )}
 
@@ -138,7 +141,7 @@ export default function Translator() {
           <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-4">
             <div className="text-3xl">✅</div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-green-800">Traducción completada</p>
+              <p className="text-sm font-semibold text-green-800">{t('translate_done')}</p>
               <p className="text-xs text-green-600 mt-0.5">{download.filename}</p>
             </div>
             <div className="flex gap-2">
@@ -146,13 +149,13 @@ export default function Translator() {
                 onClick={handleDownload}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors"
               >
-                Descargar
+                {t('btn_download')}
               </button>
               <button
                 onClick={reset}
                 className="px-4 py-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-sm rounded-lg transition-colors"
               >
-                Nuevo
+                {t('btn_new')}
               </button>
             </div>
           </div>

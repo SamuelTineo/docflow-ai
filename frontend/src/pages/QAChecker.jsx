@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import FileDropzone from '../components/FileDropzone'
 import { qaCheckDocument } from '../services/api'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const ACCEPT = {
   'application/pdf': ['.pdf'],
@@ -10,10 +11,10 @@ const ACCEPT = {
   'image/jpeg': ['.jpg', '.jpeg'],
 }
 
-const SEVERITY = {
-  critical: { label: 'Crítico',     bg: 'bg-red-100',    text: 'text-red-700',    border: 'border-red-200',    dot: 'bg-red-500'    },
-  warning:  { label: 'Advertencia', bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-500' },
-  suggestion:{ label: 'Sugerencia', bg: 'bg-blue-100',   text: 'text-blue-700',   border: 'border-blue-200',   dot: 'bg-blue-400'   },
+const SEVERITY_STYLE = {
+  critical:   { bg: 'bg-red-100',    text: 'text-red-700',    border: 'border-red-200',    dot: 'bg-red-500'    },
+  warning:    { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-500' },
+  suggestion: { bg: 'bg-blue-100',   text: 'text-blue-700',   border: 'border-blue-200',   dot: 'bg-blue-400'   },
 }
 
 const CATEGORY_LABELS = {
@@ -28,6 +29,7 @@ const CATEGORY_LABELS = {
 const STEPS = ['Cargando archivo...', 'Extrayendo contenido...', 'Analizando calidad...', 'Listo']
 
 export default function QAChecker() {
+  const { t } = useLanguage()
   const [file, setFile] = useState(null)
   const [status, setStatus] = useState('idle')
   const [progress, setProgress] = useState(0)
@@ -35,6 +37,7 @@ export default function QAChecker() {
   const [error, setError] = useState(null)
 
   const stepIndex = progress < 20 ? 0 : progress < 60 ? 1 : progress < 95 ? 2 : 3
+  const STEPS = t('qa_steps')
 
   const handleFile = useCallback(f => {
     setFile(f); setResult(null); setError(null); setStatus('idle'); setProgress(0)
@@ -48,7 +51,7 @@ export default function QAChecker() {
       setResult(data)
       setStatus('done')
     } catch (e) {
-      setError(e.response?.data?.detail || 'Error durante el análisis.')
+      setError(e.response?.data?.detail || t('qa_err'))
       setStatus('error')
     }
   }
@@ -60,12 +63,12 @@ export default function QAChecker() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">QA Document Checker</h2>
-        <p className="text-gray-500 mt-1">Detecta placeholders sin completar, inconsistencias y errores en tus documentos</p>
+        <h2 className="text-2xl font-semibold text-gray-800">{t('qa_title')}</h2>
+        <p className="text-gray-500 mt-1">{t('qa_subtitle')}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        <FileDropzone onFile={handleFile} accept={ACCEPT} label="Subí el documento a revisar" />
+        <FileDropzone onFile={handleFile} accept={ACCEPT} label={t('drop_label_qa')} />
 
         {file && (
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -84,7 +87,7 @@ export default function QAChecker() {
             disabled={status === 'loading'}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
           >
-            {status === 'loading' ? STEPS[stepIndex] : 'Verificar calidad'}
+            {status === 'loading' ? STEPS[stepIndex] : t('qa_btn')}
           </button>
         )}
 
@@ -108,6 +111,7 @@ export default function QAChecker() {
 }
 
 function QAReport({ data }) {
+  const { t } = useLanguage()
   const { report } = data
   const issues = report.issues || []
   const criticalCount  = issues.filter(i => i.severity === 'critical').length
@@ -150,7 +154,7 @@ function QAReport({ data }) {
             {criticalCount   > 0 && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full">{criticalCount} crítico{criticalCount > 1 ? 's' : ''}</span>}
             {warningCount    > 0 && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">{warningCount} advertencia{warningCount > 1 ? 's' : ''}</span>}
             {suggestionCount > 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">{suggestionCount} sugerencia{suggestionCount > 1 ? 's' : ''}</span>}
-            {issues.length === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Sin problemas detectados</span>}
+            {issues.length === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full">{t('qa_no_issues')}</span>}
           </div>
         </div>
       </div>
@@ -170,14 +174,16 @@ function QAReport({ data }) {
 }
 
 function IssueCard({ issue }) {
-  const s = SEVERITY[issue.severity] || SEVERITY.suggestion
+  const { t } = useLanguage()
+  const s = SEVERITY_STYLE[issue.severity] || SEVERITY_STYLE.suggestion
+  const label = issue.severity === 'critical' ? t('sev_critical') : issue.severity === 'warning' ? t('sev_warning') : t('sev_suggestion')
   return (
     <div className={`p-3 rounded-lg border ${s.border} ${s.bg}`}>
       <div className="flex items-start gap-2">
         <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <span className={`text-xs font-semibold ${s.text}`}>{s.label}</span>
+            <span className={`text-xs font-semibold ${s.text}`}>{label}</span>
             <span className="text-xs text-gray-500">{CATEGORY_LABELS[issue.category] || issue.category}</span>
           </div>
           <p className="text-sm text-gray-800">{issue.description}</p>
