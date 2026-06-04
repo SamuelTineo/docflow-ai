@@ -74,10 +74,13 @@ async def qa_check(content, file_type: str, filename: str) -> dict:
     }
 
 
-async def translate(content, file_type: str, filename: str, target_language: str) -> dict:
-    return {
-        "translated_text": f"[MOCK] Translated content of '{filename}' to {target_language}.\n\nLorem ipsum translated paragraph 1.\n\nLorem ipsum translated paragraph 2.",
-        "source_language": "es",
-        "target_language": target_language,
-        "word_count": 342,
-    }
+async def translate(content, file_type: str, filename: str, target_language: str) -> str:
+    return (
+        f"[MOCK TRANSLATION — {target_language.upper()}]\n\n"
+        "This is the first translated paragraph. The document has been successfully processed "
+        "and its content translated into the target language.\n\n"
+        "This is the second paragraph. It contains sample translated text that demonstrates "
+        "how the output document will look once real translation is enabled.\n\n"
+        "Third section: Additional content from the original document appears here, "
+        "translated and formatted for readability."
+    )

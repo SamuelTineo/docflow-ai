@@ -17,6 +17,22 @@ export async function getConvertFormats(ext) {
   return data.targets
 }
 
+export async function translateDocument(file, targetLang, onProgress) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('target_lang', targetLang)
+  const response = await api.post('/translate/', form, {
+    responseType: 'blob',
+    onUploadProgress: e => onProgress?.(Math.round((e.loaded / e.total) * 40)),
+    onDownloadProgress: e => onProgress?.(40 + Math.round((e.loaded / (e.total || 1)) * 55)),
+  })
+  onProgress?.(100)
+  const disposition = response.headers['content-disposition'] || ''
+  const match = disposition.match(/filename="?([^"]+)"?/)
+  const filename = match ? match[1] : `translated_${file.name}`
+  return { blob: response.data, filename }
+}
+
 export async function qaCheckDocument(file, onProgress) {
   const form = new FormData()
   form.append('file', file)

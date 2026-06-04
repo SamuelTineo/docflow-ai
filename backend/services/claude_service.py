@@ -66,6 +66,34 @@ def _vision_messages(images: list, filename: str) -> list:
     return [{"role": "user", "content": content}]
 
 
+_TRANSLATE_SYSTEM = """You are a professional translator. Translate the provided text preserving its structure.
+- Keep paragraph breaks exactly as in the original
+- Translate naturally, not word-by-word
+- Return ONLY the translated text with no explanation or preamble"""
+
+
+async def translate(content, file_type: str, filename: str, target_language: str) -> str:
+    from services.translate_service import LANGUAGE_NAMES
+    lang_name = LANGUAGE_NAMES.get(target_language, target_language)
+
+    if isinstance(content, list):
+        msg_content = [{"type": "text", "text": f"Translate this document to {lang_name}. Return only the translated text:"}]
+        for img_b64 in content[:5]:
+            msg_content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}})
+        messages = [{"role": "user", "content": msg_content}]
+    else:
+        truncated = content[:60_000]
+        messages = [{"role": "user", "content": f"Translate the following {file_type.upper()} document to {lang_name}. Return only the translated text:\n\n{truncated}"}]
+
+    response = await _client.messages.create(
+        model=MODEL,
+        max_tokens=4096,
+        system=_TRANSLATE_SYSTEM,
+        messages=messages,
+    )
+    return response.content[0].text.strip()
+
+
 _QA_SYSTEM = """You are a document quality assurance expert. Analyze documents for issues and return ONLY valid JSON — no markdown, no explanation.
 
 Response schema:
