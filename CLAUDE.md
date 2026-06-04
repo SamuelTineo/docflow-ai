@@ -1,148 +1,250 @@
-# DocFlow AI
+# DocFlow AI — CLAUDE.md
 
-Aplicación web de procesamiento inteligente de documentos con IA.
+Context file for AI-assisted development. Read this before making any changes.
 
-## Stack técnico
+---
 
-- **Frontend:** React + Tailwind CSS + Vite (puerto 3000)
-- **Backend:** Python + FastAPI (puerto 8000)
-- **IA:** Claude API (`claude-sonnet-4-6`) vía `anthropic` SDK
-- **Storage:** local por ahora, luego S3
-- **Base de datos:** SQLite (inicializada, sin uso activo aún) → luego PostgreSQL
-- **Pagos (futuro):** Stripe
-- **i18n:** ESP / ENG / POR (contexto React, sin librería externa)
+## Project Overview
 
-## Estructura real del proyecto
+DocFlow AI is an intelligent document processing web application.
+Users upload documents and interact with them through AI-powered tools: analysis, translation, format conversion, and quality checking.
+
+**Stack**
+- Frontend: React + Tailwind CSS + i18n (ES / EN / PT)
+- Backend: Python + FastAPI
+- AI: Claude API (`claude-sonnet-4-20250514`) with mock fallback for demo
+- Storage: local filesystem (S3 later)
+- Database: SQLite (schema exists, models not yet implemented)
+
+---
+
+## Current Project Structure
 
 ```
 docflow-ai/
-├── start.bat                        # Levanta backend + frontend + abre browser
-├── icon.ico                         # Ícono del acceso directo de escritorio
 ├── frontend/
 │   └── src/
-│       ├── App.jsx                  # Router, header, home (grilla 2×2 de módulos)
-│       ├── main.jsx                 # Entry point, BrowserRouter + LanguageProvider
-│       ├── i18n.js                  # Traducciones ESP/ENG/POR
 │       ├── components/
-│       │   ├── FileDropzone.jsx     # Dropzone reutilizable (react-dropzone)
-│       │   └── MockBanner.jsx       # Banner demo + input de API key (sessionStorage)
+│       │   └── MockBanner.jsx        # Demo banner shown when no API key
 │       ├── contexts/
-│       │   └── LanguageContext.jsx  # Contexto de idioma + hook useLanguage()
-│       ├── pages/
-│       │   ├── Analyzer.jsx
-│       │   ├── Translator.jsx
-│       │   ├── Converter.jsx
-│       │   └── QAChecker.jsx
-│       └── services/
-│           └── api.js               # axios + interceptor X-Claude-Key
+│       │   └── LanguageContext.jsx   # i18n context (ES/EN/PT)
+│       ├── pages/                    # One page per module
+│       ├── services/                 # API calls to backend
+│       └── i18n.js                   # Translation strings
 ├── backend/
-│   ├── main.py                      # FastAPI app, CORS, routers, /health
-│   ├── config.py                    # Pydantic settings (.env): API_KEY, USE_MOCK
-│   ├── database.py                  # SQLite init (sin modelos activos aún)
-│   ├── deps.py                      # Dependencia FastAPI: extrae X-Claude-Key del header
+│   ├── main.py                       # FastAPI app entry point
+│   ├── deps.py                       # API key dependency injection
 │   ├── routers/
-│   │   ├── analyze.py
-│   │   ├── translate.py
-│   │   ├── convert.py
-│   │   └── qa_check.py
+│   │   ├── analyze.py                # POST /api/analyze/
+│   │   ├── translate.py              # POST /api/translate/
+│   │   ├── convert.py                # POST /api/convert/
+│   │   └── qa_check.py               # POST /api/qa/
 │   └── services/
-│       ├── ai_service.py            # Router mock vs real (usa USE_MOCK o X-Claude-Key)
-│       ├── claude_service.py        # Llamadas reales a Claude API (analyze, translate, qa_check)
-│       ├── mock_service.py          # Respuestas simuladas para demo sin API key
-│       ├── document_service.py      # Extracción de contenido: PDF, DOCX, PPTX, imágenes
-│       ├── translate_service.py     # Reconstrucción de documentos traducidos (DOCX, PPTX)
-│       └── convert_service.py       # Conversiones de formato sin IA
+│       ├── document_service.py       # Content extraction (PDF, DOCX, PPTX, images)
+│       ├── ai_service.py             # AI provider router (claude / mock)
+│       ├── mock_service.py           # Simulated responses for demo mode
+│       ├── translate_service.py      # Document reconstruction after translation
+│       └── convert_service.py        # Format conversion logic
 ```
 
-> **No existe** `backend/models/` — la DB está inicializada pero sin modelos activos todavía.
+> `backend/models/` was never created. SQLite exists but has no active models yet.
 
-## Módulos — estado actual
+---
 
-### Módulo 1 — Document Analyzer ✅
-- **Input:** PDF, DOCX, PPTX, PNG, JPG (máx. 50 MB)
-- **Extracción:** texto nativo para PDF/DOCX/PPTX; fallback a visión (base64) para PDFs escaneados e imágenes
-- **Output JSON completo:**
-  ```json
-  {
-    "filename": "...",
-    "metadata": { "pages": 4, "mode": "text|vision", "is_scanned": false },
-    "analysis": {
-      "document_type": "contract|invoice|report|presentation|letter|form|other",
-      "language": "es",
-      "summary": "2-4 oraciones en el idioma del documento",
-      "structure": {
-        "sections": ["lista de secciones detectadas"],
-        "has_tables": true,
-        "estimated_pages": 4
-      },
-      "key_entities": {
-        "dates": [], "amounts": [], "people": [], "organizations": [], "locations": []
-      },
-      "quality_flags": { "is_scanned": false, "language_confidence": "high" }
+## Module Status
+
+| Module | Endpoint | Status | Notes |
+|---|---|---|---|
+| Document Analyzer | `POST /api/analyze/` | ✅ Complete | See output schema below |
+| AI Translator | `POST /api/translate/` | ✅ Complete | Layout-preserving |
+| Format Converter | `POST /api/convert/` | ✅ Complete | PDF↔DOCX, PPTX→PDF, img→PDF |
+| QA Checker | `POST /api/qa/` | ✅ Complete | Severity levels: critical/warning/suggestion |
+
+---
+
+## Analyzer Output Schema
+
+`POST /api/analyze/` returns:
+
+```json
+{
+  "filename": "...",
+  "metadata": {
+    "pages": 4,
+    "mode": "text",
+    "is_scanned": false
+  },
+  "analysis": {
+    "document_type": "contract|invoice|report|manual|other",
+    "language": "es",
+    "summary": "2-4 sentence summary",
+    "structure": {
+      "sections": ["list of detected sections"],
+      "has_tables": true,
+      "estimated_pages": 4
+    },
+    "key_entities": {
+      "dates": [],
+      "amounts": [],
+      "people": [],
+      "organizations": [],
+      "locations": []
+    },
+    "quality_flags": {
+      "is_scanned": false,
+      "language_confidence": "high"
     }
   }
-  ```
+}
+```
 
-### Módulo 2 — AI Translator ✅
-- **Input:** PDF, DOCX, PPTX, PNG, JPG + idioma destino
-- **Idiomas:** EN, ES, PT, FR, DE, IT, ZH, JA
-- **Proceso:** extrae texto → traduce con Claude → reconstruye documento
-- **Output:** archivo descargable. DOCX → DOCX (reemplaza párrafos preservando estilos), PPTX → PPTX, PDF/imagen → DOCX nuevo
+---
 
-### Módulo 3 — Format Converter ✅
-- PDF → DOCX, DOCX → PDF, PPTX → PDF, PDF ↔ imagen (PNG/JPG)
-- Sin IA. Usa `pymupdf`, `python-docx`, `pdf2docx`
+## Global AI Assistant (Contextual Chat)
 
-### Módulo 4 — QA Document Checker ✅
-- **Input:** PDF, DOCX, PPTX, PNG, JPG
-- **Output:** score 0-100 + lista de issues con severidad (`critical` / `warning` / `suggestion`) y categoría (`placeholder`, `grammar`, `inconsistency`, `missing_section`, `formatting`)
+A persistent floating chat button available on every page of the app.
+This is NOT a module — it is a global UI component that provides contextual help throughout the entire app.
 
-## Demo mode (mock)
+**Behavior by context:**
 
-- `USE_MOCK=true` en `.env` → todas las llamadas a IA devuelven datos simulados
-- El frontend detecta el modo via `/health` y muestra un banner amarillo
-- Desde el banner el usuario puede ingresar su propia Claude API key → se guarda en `sessionStorage` (se olvida al cerrar la pestaña, nunca va al servidor) → el backend la usa vía header `X-Claude-Key`, bypaseando el mock
+| User is on | Document loaded | Assistant behavior |
+|---|---|---|
+| Any module | No | Answers general questions about the app and suggests what to do |
+| Any module | Yes | Answers questions about the loaded document and current output |
+| Analyzer | Yes | Can also suggest switching to Quiz mode if question implies analysis |
+| Translator | Yes | Can answer "why was this phrase translated this way?" |
+| QA Checker | Yes | Can explain why a flag was raised and how to fix it |
+| Converter | Yes | Can suggest the best format for the user's use case |
 
-## Cómo levantar
+**Intent detection — navigation suggestions:**
+If the user asks something that implies a different module, the assistant suggests it:
+- "Can you translate this?" → "It looks like you want to translate this document. Go to Translator →"
+- "Are there any errors in this?" → "Try the QA Checker for a full quality report. Go to QA →"
+- "Give me a summary" → "The Analyzer already has a summary. Go to Document Intelligence →"
 
-```powershell
+**Frontend implementation:**
+- Floating button: fixed position, bottom-right corner, all pages
+- Chat panel: slides up on click, shows message thread + input
+- Context passed automatically from app state — user never needs to re-upload
+- Component: `frontend/src/components/GlobalAssistant.jsx`
+- Context hook: `frontend/src/contexts/AssistantContext.jsx`
+  - Exposes: `{ activeModule, documentContent, moduleOutput, conversationHistory }`
+
+**Backend:**
+- Single endpoint: `POST /api/assistant/chat/`
+- Receives:
+```json
+{
+  "active_module": "analyze|translate|convert|qa",
+  "document_content": "extracted text or null",
+  "module_output": "current module result as string or null",
+  "conversation_history": [],
+  "message": "user message"
+}
+```
+- Returns:
+```json
+{
+  "answer": "assistant response",
+  "suggested_module": "translate|qa|analyze|convert|null"
+}
+```
+- Router: `backend/routers/assistant.py`
+
+**Rules:**
+- Always works in mock mode
+- Never re-extracts document content — receives it from frontend state
+- `suggested_module` is null unless there is a clear intent to switch
+- Add i18n strings for placeholder text and default messages
+
+---
+
+## Pending Work — Priority Order
+
+### 1. Refactor Module 1: Document Intelligence (replaces current Analyzer page)
+
+The current Analyzer is a single-output tool. Refactor it into a unified
+**Document Intelligence** module with three interaction modes:
+
+**Auto Summary** (current behavior — keep as-is)
+- Displays the existing analyzer output: summary, entities, structure, quality flags
+- No changes needed to the backend
+
+**Quiz Generator** (new)
+- User clicks "Generate Quiz" after uploading a document
+- Backend: new endpoint `POST /api/analyze/quiz/`
+  - Receives: `{ document_content: str, num_questions: int (default 5) }`
+  - Uses Claude API to generate relevant Q&A pairs
+  - Returns: `{ questions: [{ question: str, answer: str }] }`
+- Frontend: display as a card list with question visible and answer hidden (reveal on click)
+
+**UI structure for the refactored page:**
+```
+📄 Document Intelligence
+├── [Upload area — shared]
+├── [Tab or toggle: Auto Summary | Quiz]
+└── [Output area — changes based on selected mode]
+```
+
+Note: AI Chat was moved to the Global Assistant (see above) — it is no longer
+a tab inside this module. The Quiz Generator is the only new mode here.
+
+All modes share the same upload and extraction step.
+Switch between modes without re-uploading.
+
+### 2. Global AI Assistant component (after Module 1 refactor)
+
+Implement the floating contextual chat as described in the Global AI Assistant section above.
+Build in this order:
+1. `AssistantContext.jsx` — app-wide state for active module + document + output
+2. `backend/routers/assistant.py` — the chat endpoint
+3. `GlobalAssistant.jsx` — floating button + chat panel UI
+4. Wire context into all existing module pages so the assistant always has current state
+
+---
+
+### 3. Database models (after Module 1 refactor)
+
+Implement SQLite models for:
+- `Document` — id, filename, file_type, uploaded_at, content_text
+- `AnalysisResult` — document_id, module (analyze/translate/convert/qa), result_json, created_at
+
+Use SQLAlchemy. Add Alembic for migrations.
+This will allow storing history and later supporting user accounts.
+
+---
+
+### 4. Auth + Stripe (future — do not implement yet)
+
+- Auth: JWT-based, simple email/password
+- Stripe: freemium model
+  - Free: 5 documents/day, watermark on converted files
+  - Pro ($12/mo): unlimited, no watermark, API access
+
+---
+
+## Development Rules
+
+1. Never re-extract document content on follow-up requests — pass extracted text from frontend state
+2. All FastAPI endpoints must use Pydantic models for request/response validation
+3. All new features must work in mock mode (no API key required for demo)
+4. Frontend must show loading states for all async operations
+5. i18n: all new UI strings must be added to `i18n.js` in ES, EN, and PT
+6. Keep each router focused — do not add business logic directly in route handlers
+7. Commits: one commit per completed feature, descriptive message in English
+
+---
+
+## How to Run
+
+```bash
 # Backend
 cd backend
-.\.venv\Scripts\uvicorn.exe main:app --reload --port 8000
+pip install -r requirements.txt
+uvicorn main:app --reload
 
-# Frontend (otra terminal)
+# Frontend
 cd frontend
+npm install
 npm run dev
 ```
-
-O doble clic en `start.bat` desde el escritorio.
-
-## Variables de entorno (`backend/.env`)
-
-```
-ANTHROPIC_API_KEY=sk-ant-...   # Puede estar vacío si USE_MOCK=true
-USE_MOCK=true                   # false para usar Claude real
-UPLOAD_DIR=uploads
-MAX_FILE_SIZE_MB=50
-```
-
-## Reglas de desarrollo
-
-1. Cada módulo es independiente pero comparte `document_service` y `ai_service`
-2. Manejo de errores robusto en todos los endpoints (HTTP 400/413/500)
-3. Validación de tipos con Pydantic en FastAPI
-4. El frontend muestra progreso en tiempo real (barra de progreso por etapas)
-5. Código listo para producción, no solo demo
-6. Cada módulo completado va en su propio commit
-
-## Estado del proyecto
-
-- ✅ Módulo 1 — Document Analyzer
-- ✅ Módulo 2 — AI Translator
-- ✅ Módulo 3 — Format Converter
-- ✅ Módulo 4 — QA Document Checker
-- ✅ UI/UX base (home 2×2, i18n ESP/ENG/POR, demo banner)
-- ⏳ Auth (login / registro)
-- ⏳ Stripe (planes de pago, límites de uso)
-- ⏳ Historial de documentos procesados (requiere modelos DB)
-- ⏳ Deploy (Railway / Render + S3)
