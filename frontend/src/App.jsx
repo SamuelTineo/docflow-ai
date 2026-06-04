@@ -34,7 +34,8 @@ export default function App() {
   const [isMock, setIsMock] = useState(false)
 
   useEffect(() => {
-    fetch('/health').then(r => r.json()).then(d => setIsMock(!!d.use_mock)).catch(() => {})
+    const base = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
+    fetch(`${base}/health`).then(r => r.json()).then(d => setIsMock(!!d.use_mock)).catch(() => {})
   }, [])
 
   return (
