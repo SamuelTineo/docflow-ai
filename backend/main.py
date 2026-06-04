@@ -18,10 +18,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from config import settings as _settings
+_origins = [o.strip() for o in _settings.allowed_origins.split(",")] if _settings.allowed_origins != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=_origins,
+    allow_credentials=_settings.allowed_origins != "*",
     allow_methods=["*"],
     allow_headers=["*"],
 )

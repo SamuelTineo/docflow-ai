@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_file_size_mb: int = 50
     use_mock: bool = False
+    allowed_origins: str = "*"
+    allowed_origins: str = "*"
 
     model_config = {"env_file": ".env"}
 
