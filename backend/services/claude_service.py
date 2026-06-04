@@ -33,14 +33,18 @@ Response schema:
 }"""
 
 
-async def analyze(content, file_type: str, filename: str) -> dict:
+def _client_for(api_key=None):
+    return anthropic.AsyncAnthropic(api_key=api_key) if api_key else _client
+
+
+async def analyze(content, file_type: str, filename: str, api_key=None) -> dict:
     messages = (
         _vision_messages(content, filename)
         if isinstance(content, list)
         else _text_messages(content, filename, file_type)
     )
 
-    response = await _client.messages.create(
+    response = await _client_for(api_key).messages.create(
         model=MODEL,
         max_tokens=2048,
         system=_SYSTEM,
@@ -72,7 +76,7 @@ _TRANSLATE_SYSTEM = """You are a professional translator. Translate the provided
 - Return ONLY the translated text with no explanation or preamble"""
 
 
-async def translate(content, file_type: str, filename: str, target_language: str) -> str:
+async def translate(content, file_type: str, filename: str, target_language: str, api_key=None) -> str:
     from services.translate_service import LANGUAGE_NAMES
     lang_name = LANGUAGE_NAMES.get(target_language, target_language)
 
@@ -85,7 +89,7 @@ async def translate(content, file_type: str, filename: str, target_language: str
         truncated = content[:60_000]
         messages = [{"role": "user", "content": f"Translate the following {file_type.upper()} document to {lang_name}. Return only the translated text:\n\n{truncated}"}]
 
-    response = await _client.messages.create(
+    response = await _client_for(api_key).messages.create(
         model=MODEL,
         max_tokens=4096,
         system=_TRANSLATE_SYSTEM,
@@ -116,7 +120,7 @@ Severity guide:
 - suggestion: style improvements, unclear phrasing, optional missing content"""
 
 
-async def qa_check(content, file_type: str, filename: str) -> dict:
+async def qa_check(content, file_type: str, filename: str, api_key=None) -> dict:
     if isinstance(content, list):
         text_parts = [{"type": "text", "text": f"Check quality of this scanned document '{filename}':"}]
         for img_b64 in content[:5]:
@@ -126,7 +130,7 @@ async def qa_check(content, file_type: str, filename: str) -> dict:
         truncated = content[:50_000]
         messages = [{"role": "user", "content": f"Check quality of this {file_type.upper()} document named '{filename}':\n\n{truncated}"}]
 
-    response = await _client.messages.create(
+    response = await _client_for(api_key).messages.create(
         model=MODEL,
         max_tokens=2048,
         system=_QA_SYSTEM,

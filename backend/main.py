@@ -34,4 +34,5 @@ app.include_router(qa_check.router, prefix="/api/qa", tags=["qa"])
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    from config import settings
+    return {"status": "ok", "version": "0.1.0", "use_mock": settings.use_mock}

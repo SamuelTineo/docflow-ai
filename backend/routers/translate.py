@@ -1,9 +1,10 @@
 import asyncio
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 
+from deps import get_api_key
 from services.ai_service import translate_document
 from services.document_service import SUPPORTED_EXTS, extract_content
 from services.translate_service import LANGUAGE_NAMES, build_output_doc
@@ -16,6 +17,7 @@ MAX_SIZE = 50 * 1024 * 1024
 async def translate(
     file: UploadFile = File(...),
     target_lang: str = Form("en"),
+    api_key: str | None = Depends(get_api_key),
 ):
     file_bytes = await file.read()
 
@@ -31,7 +33,7 @@ async def translate(
 
     try:
         content, metadata = await asyncio.to_thread(extract_content, file_bytes, ext)
-        translated_text = await translate_document(content, ext, file.filename or "document", target_lang)
+        translated_text = await translate_document(content, ext, file.filename or "document", target_lang, api_key=api_key)
         output_bytes, output_ext, mime = await asyncio.to_thread(
             build_output_doc, file_bytes, ext, translated_text, file.filename or "document"
         )

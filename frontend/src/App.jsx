@@ -1,9 +1,11 @@
 import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import Analyzer from './pages/Analyzer'
 import Translator from './pages/Translator'
 import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
 import { useLanguage } from './contexts/LanguageContext'
+import MockBanner from './components/MockBanner'
 
 const MODULES = [
   { path: '/analyze',   icon: '🔍', color: 'blue',    labelKey: 'mod_analyze_label',   descKey: 'mod_analyze_desc',   actionKey: 'mod_analyze_action'   },
@@ -29,17 +31,26 @@ export default function App() {
   const location = useLocation()
   const isHome = location.pathname === '/'
   const { lang, setLang, t } = useLanguage()
+  const [isMock, setIsMock] = useState(false)
+
+  useEffect(() => {
+    fetch('/health').then(r => r.json()).then(d => setIsMock(!!d.use_mock)).catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {isMock && <MockBanner />}
       <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2 group">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          {/* Left: app name */}
+          <Link to="/" className="flex items-center gap-2 group shrink-0">
             <span className="text-2xl">📄</span>
             <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">DocFlow AI</span>
           </Link>
+
+          {/* Center: module nav */}
           {!isHome && (
-            <nav className="flex items-center gap-1 ml-4">
+            <nav className="flex items-center gap-1">
               {MODULES.map(m => (
                 <NavLink
                   key={m.path}
@@ -55,7 +66,9 @@ export default function App() {
               ))}
             </nav>
           )}
-          <div className="ml-auto flex items-center gap-1">
+
+          {/* Right: language switcher */}
+          <div className="flex items-center gap-1 shrink-0">
             {LANGS.map(l => (
               <button
                 key={l.code}

@@ -1,6 +1,13 @@
 import axios from 'axios'
+import { getStoredApiKey } from '../components/MockBanner'
 
 const api = axios.create({ baseURL: '/api' })
+
+api.interceptors.request.use(config => {
+  const key = getStoredApiKey()
+  if (key) config.headers['X-Claude-Key'] = key
+  return config
+})
 
 export async function analyzeDocument(file, onProgress) {
   const form = new FormData()

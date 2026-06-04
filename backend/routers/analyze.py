@@ -2,8 +2,9 @@ import asyncio
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from deps import get_api_key
 from services.ai_service import analyze_document
 from services.document_service import SUPPORTED_EXTS, extract_content
 
@@ -12,7 +13,7 @@ MAX_SIZE = 50 * 1024 * 1024
 
 
 @router.post("/")
-async def analyze(file: UploadFile = File(...)):
+async def analyze(file: UploadFile = File(...), api_key: str | None = Depends(get_api_key)):
     file_bytes = await file.read()
 
     if len(file_bytes) > MAX_SIZE:
@@ -24,7 +25,7 @@ async def analyze(file: UploadFile = File(...)):
 
     try:
         content, metadata = await asyncio.to_thread(extract_content, file_bytes, ext)
-        analysis = await analyze_document(content, ext, file.filename or "document")
+        analysis = await analyze_document(content, ext, file.filename or "document", api_key=api_key)
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="La IA devolvió una respuesta inesperada. Intentá de nuevo.")
     except ValueError as e:
