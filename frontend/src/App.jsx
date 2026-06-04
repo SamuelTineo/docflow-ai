@@ -5,7 +5,7 @@ import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
 
 const modules = [
-  { path: '/analyze',  label: 'Document Analyzer', icon: '🔍', desc: 'Extrae y estructura contenido',       ready: false },
+  { path: '/analyze',  label: 'Document Analyzer', icon: '🔍', desc: 'Extrae y estructura contenido',       ready: true  },
   { path: '/translate',label: 'AI Translator',      icon: '🌐', desc: 'Traduce preservando layout',          ready: false },
   { path: '/convert',  label: 'Format Converter',   icon: '🔄', desc: 'Convierte entre formatos',            ready: true  },
   { path: '/qa',       label: 'QA Checker',         icon: '✅', desc: 'Detecta inconsistencias y errores',   ready: false },
