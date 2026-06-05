@@ -72,6 +72,24 @@ export async function chatWithAssistant({ activeModule, documentName, moduleOutp
   return data
 }
 
+export async function generateMCQuiz(file, numQuestions = 5, onProgress) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('num_questions', numQuestions)
+  const { data } = await api.post('/educator/quiz/mc/', form, {
+    onUploadProgress: e => onProgress?.(Math.round((e.loaded / e.total) * 60)),
+  })
+  onProgress?.(100)
+  return data
+}
+
+export async function extractFromScan(imageFile) {
+  const form = new FormData()
+  form.append('file', imageFile)
+  const { data } = await api.post('/scanner/extract/', form)
+  return data
+}
+
 export async function convertDocument(file, targetFormat, onProgress) {
   const form = new FormData()
   form.append('file', file)

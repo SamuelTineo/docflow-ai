@@ -4,7 +4,9 @@ import Analyzer from './pages/Analyzer'
 import Translator from './pages/Translator'
 import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
-import { ChevronDown, FileOutput, FileSearch, FileText, Languages, ShieldCheck, Sparkles } from 'lucide-react'
+import Scanner from './pages/Scanner'
+import Educator from './pages/Educator'
+import { BookOpen, Camera, ChevronDown, FileOutput, FileSearch, FileText, Languages, ShieldCheck, Sparkles } from 'lucide-react'
 import { useLanguage } from './contexts/LanguageContext'
 import { AssistantProvider } from './contexts/AssistantContext'
 import MockBanner from './components/MockBanner'
@@ -12,9 +14,11 @@ import GlobalAssistant from './components/GlobalAssistant'
 
 const MODULES = [
   { path: '/analyze',   Icon: FileSearch,  color: 'blue',    labelKey: 'mod_analyze_label',   descKey: 'mod_analyze_desc',   actionKey: 'mod_analyze_action'   },
+  { path: '/educator',  Icon: BookOpen,    color: 'rose',    labelKey: 'mod_educator_label',  descKey: 'mod_educator_desc',  actionKey: 'mod_educator_action'  },
   { path: '/translate', Icon: Languages,   color: 'violet',  labelKey: 'mod_translate_label', descKey: 'mod_translate_desc', actionKey: 'mod_translate_action' },
-  { path: '/convert',   Icon: FileOutput,     color: 'emerald', labelKey: 'mod_convert_label',   descKey: 'mod_convert_desc',   actionKey: 'mod_convert_action'   },
+  { path: '/scanner',   Icon: Camera,      color: 'cyan',    labelKey: 'mod_scanner_label',   descKey: 'mod_scanner_desc',   actionKey: 'mod_scanner_action'   },
   { path: '/qa',        Icon: ShieldCheck, color: 'amber',   labelKey: 'mod_qa_label',        descKey: 'mod_qa_desc',        actionKey: 'mod_qa_action'        },
+  { path: '/convert',   Icon: FileOutput,  color: 'emerald', labelKey: 'mod_convert_label',   descKey: 'mod_convert_desc',   actionKey: 'mod_convert_action'   },
 ]
 
 const LANGS = [
@@ -24,10 +28,12 @@ const LANGS = [
 ]
 
 const COLOR = {
-  blue:    { bg: 'bg-blue-50',   border: 'hover:border-blue-400',   btn: 'bg-blue-600 hover:bg-blue-700',   icon: 'bg-blue-100'   },
+  blue:    { bg: 'bg-blue-50',   border: 'hover:border-blue-400',   btn: 'bg-blue-600 hover:bg-blue-700',     icon: 'bg-blue-100'   },
   violet:  { bg: 'bg-violet-50', border: 'hover:border-violet-400', btn: 'bg-violet-600 hover:bg-violet-700', icon: 'bg-violet-100' },
   emerald: { bg: 'bg-emerald-50',border: 'hover:border-emerald-400',btn: 'bg-emerald-600 hover:bg-emerald-700',icon: 'bg-emerald-100'},
-  amber:   { bg: 'bg-amber-50',  border: 'hover:border-amber-400',  btn: 'bg-amber-500 hover:bg-amber-600',  icon: 'bg-amber-100'  },
+  amber:   { bg: 'bg-amber-50',  border: 'hover:border-amber-400',  btn: 'bg-amber-500 hover:bg-amber-600',   icon: 'bg-amber-100'  },
+  cyan:    { bg: 'bg-cyan-50',   border: 'hover:border-cyan-400',   btn: 'bg-cyan-600 hover:bg-cyan-700',     icon: 'bg-cyan-100'   },
+  rose:    { bg: 'bg-rose-50',  border: 'hover:border-rose-400',   btn: 'bg-rose-600 hover:bg-rose-700',     icon: 'bg-rose-100'   },
 }
 
 export default function App() {
@@ -124,6 +130,8 @@ export default function App() {
           <Route path="/translate" element={<Translator />} />
           <Route path="/convert"   element={<Converter />} />
           <Route path="/qa"        element={<QAChecker />} />
+          <Route path="/scanner"   element={<Scanner />} />
+          <Route path="/educator"  element={<Educator />} />
         </Routes>
       </main>
       <GlobalAssistant />
@@ -150,15 +158,15 @@ function Home() {
         <p className="text-lg text-slate-300 whitespace-nowrap">{t('hero_subtitle')}</p>
       </div>
 
-      {/* Module cards — 2×2 grid of squares */}
+      {/* Module cards — 2-column grid */}
       <div className="grid grid-cols-2 gap-5">
-        {MODULES.map(m => {
+        {MODULES.map((m) => {
           const c = COLOR[m.color]
           return (
             <Link
               key={m.path}
               to={m.path}
-              className={`min-h-[260px] bg-white border border-gray-200 rounded-2xl p-6 ${c.border} hover:shadow-lg transition-all flex flex-col justify-between group`}
+              className={`min-h-[220px] bg-white border border-gray-200 rounded-2xl p-6 ${c.border} hover:shadow-lg transition-all flex flex-col justify-between group`}
             >
               <div>
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-blue-600 to-violet-600 shadow-md">

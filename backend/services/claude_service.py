@@ -136,6 +136,63 @@ async def generate_quiz(content, file_type: str, filename: str, num_questions: i
     return json.loads(response.content[0].text.strip())
 
 
+_MC_QUIZ_SYSTEM = """You are an educational assessment expert. Generate multiple-choice quiz questions from a document and return ONLY valid JSON — no markdown, no explanation.
+
+Response schema:
+{
+  "questions": [
+    {
+      "question": "Question text",
+      "options": {"A": "option text", "B": "option text", "C": "option text", "D": "option text"},
+      "correct": "A|B|C|D",
+      "answer": "Brief explanation of why the correct answer is right (1-2 sentences)"
+    }
+  ]
+}
+
+Guidelines:
+- Each question must have exactly 4 options (A, B, C, D)
+- Only one option is correct
+- Wrong options must be plausible but clearly incorrect
+- Vary difficulty across questions
+- Generate all content in the same language as the document"""
+
+
+async def generate_mc_quiz(content, file_type: str, filename: str, num_questions: int = 5, api_key=None) -> dict:
+    if isinstance(content, list):
+        msg_content = [{"type": "text", "text": f"Generate {num_questions} multiple-choice questions from this document '{filename}':"}]
+        for img_b64 in content[:5]:
+            msg_content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}})
+        messages = [{"role": "user", "content": msg_content}]
+    else:
+        truncated = content[:50_000]
+        messages = [{"role": "user", "content": f"Generate {num_questions} multiple-choice questions from this {file_type.upper()} document named '{filename}':\n\n{truncated}"}]
+
+    response = await _client_for(api_key).messages.create(
+        model=MODEL, max_tokens=2048, system=_MC_QUIZ_SYSTEM, messages=messages,
+    )
+    return json.loads(response.content[0].text.strip())
+
+
+_OCR_SYSTEM = """You are an OCR engine. Extract ALL text from the provided image exactly as it appears.
+- Preserve original line breaks and formatting
+- Include every word: titles, body, footnotes, captions, watermarks
+- If there is a table, represent it in plain text with spacing
+- Do NOT summarize, translate, or interpret — only transcribe
+- Return ONLY the extracted text, nothing else"""
+
+
+async def extract_text_from_scan(img_b64: str, media_type: str, api_key=None) -> str:
+    messages = [{"role": "user", "content": [
+        {"type": "text", "text": "Extract all text from this image:"},
+        {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_b64}},
+    ]}]
+    response = await _client_for(api_key).messages.create(
+        model=MODEL, max_tokens=4096, system=_OCR_SYSTEM, messages=messages,
+    )
+    return response.content[0].text.strip()
+
+
 _QA_SYSTEM = """You are a document quality assurance expert. Analyze documents for issues and return ONLY valid JSON — no markdown, no explanation.
 
 Response schema:

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import FileDropzone from '../components/FileDropzone'
 import { translateDocument } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -30,6 +31,7 @@ const OUTPUT_LABEL = { docx: 'DOCX', pptx: 'PPTX', pdf: 'PDF' }
 export default function Translator() {
   const { t } = useLanguage()
   const { updateContext } = useAssistant()
+  const location = useLocation()
   const [file, setFile]           = useState(null)
 
   useEffect(() => { updateContext({ activeModule: 'translate' }) }, [updateContext])
@@ -46,6 +48,14 @@ export default function Translator() {
     setFile(f); setDownload(null); setError(null); setStatus('idle'); setProgress(0)
     updateContext({ documentName: f?.name || null, moduleOutput: null })
   }, [updateContext])
+
+  useEffect(() => {
+    const preloaded = location.state?.preloadedFile
+    if (preloaded) {
+      handleFile(preloaded)
+      window.history.replaceState({}, '')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTranslate = async () => {
     setStatus('loading'); setProgress(5); setError(null); setDownload(null)

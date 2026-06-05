@@ -37,6 +37,22 @@ async def assistant_chat(active_module, document_name, module_output, history, m
     return await claude_chat(active_module, document_name, module_output, history, message, api_key=api_key)
 
 
+async def generate_mc_quiz(content, file_type: str, filename: str, num_questions: int = 5, api_key: str | None = None) -> dict:
+    if _use_mock(api_key):
+        from services.mock_service import generate_mc_quiz as mock_mc
+        return await mock_mc(num_questions)
+    from services.claude_service import generate_mc_quiz as claude_mc
+    return await claude_mc(content, file_type, filename, num_questions, api_key=api_key)
+
+
+async def extract_text_from_image(img_b64: str, media_type: str, api_key: str | None = None) -> str:
+    if _use_mock(api_key):
+        from services.mock_service import extract_text_from_image as mock_ocr
+        return await mock_ocr()
+    from services.claude_service import extract_text_from_scan
+    return await extract_text_from_scan(img_b64, media_type, api_key=api_key)
+
+
 async def translate_document(content, file_type: str, filename: str, target_language: str, api_key: str | None = None) -> str:
     if _use_mock(api_key):
         from services.mock_service import translate

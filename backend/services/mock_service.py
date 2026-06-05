@@ -131,3 +131,57 @@ async def translate(content, file_type: str, filename: str, target_language: str
         "Third section: Additional content from the original document appears here, "
         "translated and formatted for readability."
     )
+
+
+async def generate_mc_quiz(num_questions: int = 5) -> dict:
+    base = [
+        {
+            "question": "¿Cuál es el plazo de entrega estipulado en el contrato?",
+            "options": {"A": "15 días hábiles", "B": "30 días hábiles", "C": "45 días corridos", "D": "60 días hábiles"},
+            "correct": "B",
+            "answer": "El contrato establece un plazo de 30 días hábiles a partir de la firma."
+        },
+        {
+            "question": "¿Cuál es el monto total del servicio?",
+            "options": {"A": "$3.000 USD", "B": "$4.500 USD", "C": "$5.000 USD", "D": "$7.000 USD"},
+            "correct": "C",
+            "answer": "El monto total asciende a $5.000 USD pagaderos en dos cuotas iguales."
+        },
+        {
+            "question": "¿En cuántas cuotas se paga el servicio?",
+            "options": {"A": "Una cuota", "B": "Dos cuotas iguales", "C": "Tres cuotas mensuales", "D": "Pago al finalizar"},
+            "correct": "B",
+            "answer": "El pago se realiza en dos cuotas iguales: al inicio y al finalizar el proyecto."
+        },
+        {
+            "question": "¿Con cuántos días de anticipación deben notificarse los cambios de alcance?",
+            "options": {"A": "2 días hábiles", "B": "3 días corridos", "C": "5 días hábiles", "D": "10 días hábiles"},
+            "correct": "C",
+            "answer": "Cualquier modificación al alcance debe acordarse con mínimo 5 días hábiles de anticipación."
+        },
+        {
+            "question": "¿Quiénes son las partes del contrato?",
+            "options": {"A": "Tech Solutions y Empresa ABC", "B": "Tech Solutions y Empresa XYZ", "C": "DocFlow y Empresa XYZ", "D": "Empresa ABC y Empresa XYZ"},
+            "correct": "B",
+            "answer": "Las partes son Tech Solutions S.A. como prestador y Empresa XYZ Ltda. como cliente."
+        },
+    ]
+    return {"questions": base[:max(1, min(num_questions, len(base)))]}
+
+
+async def extract_text_from_image() -> str:
+    return (
+        "CONTRATO DE PRESTACIÓN DE SERVICIOS\n\n"
+        "Entre las partes:\n\n"
+        "Prestador: Tech Solutions S.A.\n"
+        "Cliente: Empresa XYZ Ltda.\n\n"
+        "Fecha: 15 de enero de 2025\n\n"
+        "Cláusula 1: El prestador se compromete a entregar los servicios acordados "
+        "dentro de un plazo de 30 días hábiles a partir de la firma del presente contrato.\n\n"
+        "Cláusula 2: El monto total del servicio asciende a $5.000 USD, "
+        "pagaderos en dos cuotas iguales al inicio y a la finalización del proyecto.\n\n"
+        "Cláusula 3: Cualquier modificación al alcance deberá ser acordada por escrito "
+        "entre ambas partes con un mínimo de 5 días hábiles de anticipación.\n\n"
+        "Firma del prestador: _______________\n"
+        "Firma del cliente: _______________"
+    )

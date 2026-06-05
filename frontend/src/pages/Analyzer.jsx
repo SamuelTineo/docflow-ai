@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import FileDropzone from '../components/FileDropzone'
 import { analyzeDocument, generateQuiz } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -20,6 +21,7 @@ const DOC_TYPE_LABELS = {
 export default function Analyzer() {
   const { t } = useLanguage()
   const { updateContext } = useAssistant()
+  const location = useLocation()
   const [file, setFile] = useState(null)
   const [activeTab, setActiveTab] = useState('summary')
 
@@ -46,6 +48,14 @@ export default function Analyzer() {
   }, [updateContext])
 
   const reset = () => handleFile(null)
+
+  useEffect(() => {
+    const preloaded = location.state?.preloadedFile
+    if (preloaded) {
+      handleFile(preloaded)
+      window.history.replaceState({}, '')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAnalyze = async () => {
     setSummaryStatus('loading'); setSummaryProgress(5); setSummaryError(null)
