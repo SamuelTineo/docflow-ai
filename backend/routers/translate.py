@@ -1,10 +1,11 @@
 import asyncio
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from deps import get_api_key
+from limiter import limiter
 from services.ai_service import translate_document
 from services.document_service import SUPPORTED_EXTS, extract_content
 from services.translate_service import LANGUAGE_NAMES, build_output_doc
@@ -14,7 +15,9 @@ MAX_SIZE = 50 * 1024 * 1024
 
 
 @router.post("/")
+@limiter.limit("10/minute")
 async def translate(
+    request: Request,
     file: UploadFile = File(...),
     target_lang: str = Form("en"),
     api_key: str | None = Depends(get_api_key),

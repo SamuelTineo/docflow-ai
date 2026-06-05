@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import FileDropzone from '../components/FileDropzone'
 import { convertDocument, getConvertFormats } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAssistant } from '../contexts/AssistantContext'
 
 const FORMAT_LABELS = {
   pdf:  'PDF',
@@ -19,7 +20,10 @@ const ACCEPT = {
 
 export default function Converter() {
   const { t } = useLanguage()
+  const { updateContext } = useAssistant()
   const [file, setFile] = useState(null)
+
+  useEffect(() => { updateContext({ activeModule: 'convert' }) }, [updateContext])
   const [formats, setFormats] = useState([])
   const [target, setTarget] = useState(null)
   const [status, setStatus] = useState('idle')
@@ -33,6 +37,7 @@ export default function Converter() {
     setResult(null)
     setError(null)
     setStatus('idle')
+    updateContext({ documentName: f?.name || null, moduleOutput: null })
     const ext = f.name.split('.').pop()
     try {
       const available = await getConvertFormats(ext)
@@ -53,8 +58,10 @@ export default function Converter() {
       const url = URL.createObjectURL(blob)
       const disposition = response.headers['content-disposition'] || ''
       const match = disposition.match(/filename="(.+)"/)
-      setResult({ url, name: match ? match[1] : `converted.${target}` })
+      const resultName = match ? match[1] : `converted.${target}`
+      setResult({ url, name: resultName })
       setStatus('done')
+      updateContext({ moduleOutput: `Converted to ${target?.toUpperCase()}: ${resultName}` })
     } catch (e) {
       setError(e.response?.data?.detail || t('convert_err'))
       setStatus('error')
@@ -67,13 +74,13 @@ export default function Converter() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">{t('convert_title')}</h2>
-        <p className="text-gray-500 mt-1">{t('convert_subtitle')}</p>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">{t('convert_title')}</h2>
+        <p className="text-slate-300 mt-1">{t('convert_subtitle')}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+      <div className="space-y-5">
         <FileDropzone onFile={handleFile} accept={ACCEPT} label={t('convert_drop')} />
 
         {file && (
@@ -113,19 +120,13 @@ export default function Converter() {
             disabled={status === 'loading'}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
           >
-            {status === 'loading'
-              ? `${t('convert_loading')} ${progress}%`
-              : `${t('convert_btn')} ${FORMAT_LABELS[target] || target}`}
+            {status === 'loading' ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {t('convert_loading')}
+              </span>
+            ) : `${t('convert_btn')} ${FORMAT_LABELS[target] || target}`}
           </button>
-        )}
-
-        {status === 'loading' && (
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
         )}
 
         {error && (

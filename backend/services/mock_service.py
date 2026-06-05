@@ -74,6 +74,53 @@ async def qa_check(content, file_type: str, filename: str) -> dict:
     }
 
 
+async def generate_quiz(content, file_type: str, filename: str, num_questions: int = 5) -> dict:
+    import asyncio
+    await asyncio.sleep(0.5)
+    questions = [
+        {"question": "¿Cuál es el objeto principal de este documento?", "answer": "El documento describe los términos y condiciones acordados entre las partes, incluyendo plazos, montos y obligaciones de cada uno."},
+        {"question": "¿Qué cláusulas de protección se mencionan?", "answer": "Se incluyen cláusulas de confidencialidad, propiedad intelectual y condiciones de rescisión del contrato."},
+        {"question": "¿Cuáles son los plazos establecidos?", "answer": "El acuerdo tiene vigencia desde el 1 de enero de 2025 hasta el 31 de diciembre de 2025, con posibilidad de renovación."},
+        {"question": "¿Cuál es el monto económico involucrado?", "answer": "$3.500 USD mensuales, equivalente a $42.000 USD anuales por los servicios prestados."},
+        {"question": "¿Qué ocurre ante un incumplimiento del contrato?", "answer": "La parte afectada puede iniciar el proceso de rescisión con previo aviso de 30 días, con posibilidad de reclamar daños y perjuicios."},
+        {"question": "¿Quiénes son las partes involucradas en el acuerdo?", "answer": "El contrato es celebrado entre Empresa ABC S.A. como comitente y Juan Pérez como contratista, ambos domiciliados en Argentina."},
+        {"question": "¿Qué tipo de servicios se prestan según el documento?", "answer": "Servicios de desarrollo de software, prestados de forma independiente por el contratista bajo las condiciones pactadas."},
+        {"question": "¿Cómo se regula la propiedad intelectual de los entregables?", "answer": "Todo trabajo producido durante la vigencia del contrato es propiedad exclusiva del comitente, quien retiene todos los derechos."},
+        {"question": "¿Bajo qué jurisdicción se resuelven los conflictos?", "answer": "Cualquier disputa se resuelve ante los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, Argentina."},
+        {"question": "¿El contrato permite la subcontratación?", "answer": "El documento no especifica explícitamente la posibilidad de subcontratar, por lo que se entiende que el contratista debe cumplir personalmente con las obligaciones pactadas."},
+    ]
+    return {"questions": questions[:num_questions]}
+
+
+_APP_KEYWORDS = [
+    'traduc', 'translat', 'analiz', 'convert', 'calidad', 'quality', 'revisar',
+    'resumen', 'summary', 'quiz', 'preguntas', 'formato', 'pdf', 'docx', 'word',
+    'módulo', 'module', 'app', 'docflow', 'documento', 'document', 'archivo', 'file',
+    'error', 'problema', 'sección', 'entidad', 'fecha', 'monto', 'organiz',
+]
+
+async def assistant_chat(active_module, document_name, module_output, history, message) -> dict:
+    import asyncio
+    await asyncio.sleep(0.3)
+    msg = message.lower()
+
+    has_app_context = any(w in msg for w in _APP_KEYWORDS) or document_name or active_module
+    if not has_app_context:
+        return {"answer": "Solo puedo responder preguntas sobre DocFlow AI o sobre el documento que subiste.", "suggested_module": None}
+
+    if any(w in msg for w in ['traduc', 'translat']):
+        return {"answer": "Parece que querés traducir este documento. El Traductor IA preserva el formato original al traducir a 8 idiomas.", "suggested_module": "translate"}
+    if any(w in msg for w in ['error', 'problema', 'calidad', 'quality', 'revisar']):
+        return {"answer": "Para detectar errores, placeholders sin completar e inconsistencias, el Verificador de calidad es la herramienta indicada.", "suggested_module": "qa"}
+    if any(w in msg for w in ['convertir', 'convert', 'formato', 'format', 'pdf', 'word', 'docx']):
+        return {"answer": "Para convertir entre formatos (PDF ↔ DOCX, PPTX → PDF, imágenes → PDF), usá el Conversor de formatos.", "suggested_module": "convert"}
+    if any(w in msg for w in ['analiz', 'resumen', 'summary', 'quiz', 'preguntas']):
+        return {"answer": "Para obtener un resumen inteligente y generar preguntas a partir del documento, usá Inteligencia de documentos.", "suggested_module": "analyze"}
+    if document_name:
+        return {"answer": f"Tenés cargado '{document_name}'. ¿Querés analizarlo, traducirlo, convertirlo o revisar su calidad?", "suggested_module": None}
+    return {"answer": "Soy el asistente de DocFlow AI. Subí un documento y preguntame sobre él, o consultame qué módulo usar para tu tarea.", "suggested_module": None}
+
+
 async def translate(content, file_type: str, filename: str, target_language: str) -> str:
     return (
         f"[MOCK TRANSLATION — {target_language.upper()}]\n\n"

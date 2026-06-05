@@ -1,21 +1,24 @@
 import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Analyzer from './pages/Analyzer'
 import Translator from './pages/Translator'
 import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
+import { ChevronDown, FileOutput, FileSearch, FileText, Languages, ShieldCheck, Sparkles } from 'lucide-react'
 import { useLanguage } from './contexts/LanguageContext'
+import { AssistantProvider } from './contexts/AssistantContext'
 import MockBanner from './components/MockBanner'
+import GlobalAssistant from './components/GlobalAssistant'
 
 const MODULES = [
-  { path: '/analyze',   icon: '🔍', color: 'blue',    labelKey: 'mod_analyze_label',   descKey: 'mod_analyze_desc',   actionKey: 'mod_analyze_action'   },
-  { path: '/translate', icon: '🌐', color: 'violet',  labelKey: 'mod_translate_label', descKey: 'mod_translate_desc', actionKey: 'mod_translate_action' },
-  { path: '/convert',   icon: '🔄', color: 'emerald', labelKey: 'mod_convert_label',   descKey: 'mod_convert_desc',   actionKey: 'mod_convert_action'   },
-  { path: '/qa',        icon: '✅', color: 'amber',   labelKey: 'mod_qa_label',        descKey: 'mod_qa_desc',        actionKey: 'mod_qa_action'        },
+  { path: '/analyze',   Icon: FileSearch,  color: 'blue',    labelKey: 'mod_analyze_label',   descKey: 'mod_analyze_desc',   actionKey: 'mod_analyze_action'   },
+  { path: '/translate', Icon: Languages,   color: 'violet',  labelKey: 'mod_translate_label', descKey: 'mod_translate_desc', actionKey: 'mod_translate_action' },
+  { path: '/convert',   Icon: FileOutput,     color: 'emerald', labelKey: 'mod_convert_label',   descKey: 'mod_convert_desc',   actionKey: 'mod_convert_action'   },
+  { path: '/qa',        Icon: ShieldCheck, color: 'amber',   labelKey: 'mod_qa_label',        descKey: 'mod_qa_desc',        actionKey: 'mod_qa_action'        },
 ]
 
 const LANGS = [
-  { code: 'es', flag: '🇦🇷', abbr: 'ESP' },
+  { code: 'es', flag: '🌎', abbr: 'ESP' },
   { code: 'en', flag: '🇺🇸', abbr: 'ENG' },
   { code: 'pt', flag: '🇧🇷', abbr: 'POR' },
 ]
@@ -32,6 +35,14 @@ export default function App() {
   const isHome = location.pathname === '/'
   const { lang, setLang, t } = useLanguage()
   const [isMock, setIsMock] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
+  const langRef = useRef(null)
+
+  useEffect(() => {
+    const handler = e => { if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
@@ -39,15 +50,18 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AssistantProvider>
+    <div className="min-h-screen bg-slate-700">
       {isMock && <MockBanner />}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+      <header className="bg-gradient-to-r from-blue-600 to-violet-600 px-6 py-4 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-5xl mx-auto flex items-center">
           {/* Left: app name */}
-          <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <span className="text-2xl">📄</span>
-            <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">DocFlow AI</span>
-          </Link>
+          <div className="flex-1">
+            <Link to="/" className="flex items-center gap-2 group w-fit">
+              <FileText size={26} className="text-white" strokeWidth={2.5} />
+              <span className="text-xl font-extrabold tracking-tight text-white">DocFlow AI</span>
+            </Link>
+          </div>
 
           {/* Center: module nav */}
           {!isHome && (
@@ -57,32 +71,48 @@ export default function App() {
                   key={m.path}
                   to={m.path}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                    `relative group p-2 rounded-lg transition-colors ${
+                      isActive ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
                     }`
                   }
                 >
-                  {m.icon} {t(m.labelKey)}
+                  <m.Icon size={18} />
+                  <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                    {t(m.labelKey)}
+                  </span>
                 </NavLink>
               ))}
             </nav>
           )}
 
           {/* Right: language switcher */}
-          <div className="flex items-center gap-1 shrink-0">
-            {LANGS.map(l => (
-              <button
-                key={l.code}
-                onClick={() => setLang(l.code)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  lang === l.code
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {l.abbr}
-              </button>
-            ))}
+          <div className="flex-1 flex justify-end">
+          <div ref={langRef} className="relative">
+            <button
+              onClick={() => setLangOpen(o => !o)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all"
+            >
+              {LANGS.find(l => l.code === lang)?.abbr}
+              <ChevronDown size={12} className={`transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {langOpen && (
+              <div className="absolute right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 min-w-[90px]">
+                {LANGS.map(l => (
+                  <button
+                    key={l.code}
+                    onClick={() => { setLang(l.code); setLangOpen(false) }}
+                    className={`w-full flex items-center px-3 py-2 text-xs font-semibold transition-colors ${
+                      lang === l.code
+                        ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {l.abbr}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           </div>
         </div>
       </header>
@@ -96,7 +126,9 @@ export default function App() {
           <Route path="/qa"        element={<QAChecker />} />
         </Routes>
       </main>
+      <GlobalAssistant />
     </div>
+    </AssistantProvider>
   )
 }
 
@@ -106,9 +138,16 @@ function Home() {
     <div>
       {/* Hero */}
       <div className="text-center mb-12">
-        <div className="text-5xl mb-4">📄</div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">DocFlow AI</h1>
-        <p className="text-lg text-gray-500 max-w-xl mx-auto">{t('hero_subtitle')}</p>
+        <div className="flex items-center justify-center gap-4 mb-3">
+          <div className="relative w-16 h-16 shrink-0">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg">
+              <FileText size={36} className="text-white" strokeWidth={1.75} />
+            </div>
+            <Sparkles size={14} className="text-yellow-300 absolute bottom-2 right-2" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-5xl font-black tracking-tight text-white">DocFlow AI</h1>
+        </div>
+        <p className="text-lg text-slate-300 whitespace-nowrap">{t('hero_subtitle')}</p>
       </div>
 
       {/* Module cards — 2×2 grid of squares */}
@@ -122,13 +161,13 @@ function Home() {
               className={`min-h-[260px] bg-white border border-gray-200 rounded-2xl p-6 ${c.border} hover:shadow-lg transition-all flex flex-col justify-between group`}
             >
               <div>
-                <div className={`${c.icon} w-14 h-14 rounded-xl flex items-center justify-center text-3xl mb-4`}>
-                  {m.icon}
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-blue-600 to-violet-600 shadow-md">
+                  <m.Icon size={36} className="text-white" strokeWidth={2} />
                 </div>
-                <h3 className="font-semibold text-gray-900 text-lg leading-tight">{t(m.labelKey)}</h3>
+                <h3 className="font-bold text-gray-900 text-lg leading-tight tracking-tight">{t(m.labelKey)}</h3>
                 <p className="text-sm text-gray-500 mt-2 leading-relaxed">{t(m.descKey)}</p>
               </div>
-              <span className={`${c.btn} text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors text-center mt-4`}>
+              <span className="bg-gradient-to-r from-blue-600 to-violet-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg text-center mt-4">
                 {t(m.actionKey)} →
               </span>
             </Link>

@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import FileDropzone from '../components/FileDropzone'
 import { translateDocument } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAssistant } from '../contexts/AssistantContext'
 
 const ACCEPT = {
   'application/pdf': ['.pdf'],
@@ -28,7 +29,10 @@ const OUTPUT_LABEL = { docx: 'DOCX', pptx: 'PPTX', pdf: 'PDF' }
 
 export default function Translator() {
   const { t } = useLanguage()
+  const { updateContext } = useAssistant()
   const [file, setFile]           = useState(null)
+
+  useEffect(() => { updateContext({ activeModule: 'translate' }) }, [updateContext])
   const [targetLang, setTargetLang] = useState('en')
   const [status, setStatus]       = useState('idle')
   const [progress, setProgress]   = useState(0)
@@ -40,7 +44,8 @@ export default function Translator() {
 
   const handleFile = useCallback(f => {
     setFile(f); setDownload(null); setError(null); setStatus('idle'); setProgress(0)
-  }, [])
+    updateContext({ documentName: f?.name || null, moduleOutput: null })
+  }, [updateContext])
 
   const handleTranslate = async () => {
     setStatus('loading'); setProgress(5); setError(null); setDownload(null)
@@ -49,6 +54,7 @@ export default function Translator() {
       const { blob, filename } = await translateDocument(file, targetLang, p => setProgress(p))
       setDownload({ blob, filename })
       setStatus('done')
+      updateContext({ moduleOutput: `Translated to ${targetLang}: ${filename}` })
     } catch (e) {
       setError(e.response?.data?.detail || t('translate_err'))
       setStatus('error')
@@ -75,11 +81,11 @@ export default function Translator() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">{t('translate_title')}</h2>
-        <p className="text-gray-500 mt-1">{t('translate_subtitle')}</p>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">{t('translate_title')}</h2>
+        <p className="text-slate-300 mt-1">{t('translate_subtitle')}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+      <div className="space-y-5">
         <FileDropzone onFile={handleFile} accept={ACCEPT} label={t('drop_label_translate')} />
 
         {file && (
@@ -95,19 +101,21 @@ export default function Translator() {
 
         {/* Language selector */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">{t('translate_lang_label')}</p>
+          <p className="text-sm font-medium text-slate-300 mb-2">{t('translate_lang_label')}</p>
           <div className="grid grid-cols-4 gap-2">
             {LANGUAGES.map(lang => (
               <button
                 key={lang.code}
                 onClick={() => setTargetLang(lang.code)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
                   targetLang === lang.code
-                    ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    ? 'border-transparent bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-md'
+                    : 'border-white/20 bg-white text-gray-700 hover:border-blue-400 hover:text-blue-600'
                 }`}
               >
-                <span>{lang.flag}</span>
+                <span className={`text-[10px] font-bold uppercase px-1 py-0.5 rounded ${
+                  targetLang === lang.code ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>{lang.code}</span>
                 <span className="truncate">{lang.label}</span>
               </button>
             ))}
@@ -120,17 +128,13 @@ export default function Translator() {
             disabled={status === 'loading'}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
           >
-            {status === 'loading' ? STEPS[stepIndex] : `${t('translate_btn')} ${langLabel}`}
+            {status === 'loading' ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {STEPS[stepIndex]}
+              </span>
+            ) : `${t('translate_btn')} ${langLabel}`}
           </button>
-        )}
-
-        {status === 'loading' && (
-          <div className="space-y-1">
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-xs text-gray-400 text-right">{progress}%</p>
-          </div>
         )}
 
         {error && (

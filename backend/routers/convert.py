@@ -2,9 +2,10 @@ import asyncio
 import io
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
+from limiter import limiter
 from services.convert_service import get_supported_targets, run_conversion
 
 router = APIRouter()
@@ -21,7 +22,9 @@ async def formats(file_ext: str):
 
 
 @router.post("/")
+@limiter.limit("10/minute")
 async def convert_document(
+    request: Request,
     file: UploadFile = File(...),
     target_format: str = Form(...),
 ):

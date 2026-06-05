@@ -50,6 +50,28 @@ export async function qaCheckDocument(file, onProgress) {
   return data
 }
 
+export async function generateQuiz(file, numQuestions = 5, onProgress) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('num_questions', numQuestions)
+  const { data } = await api.post('/analyze/quiz/', form, {
+    onUploadProgress: e => onProgress?.(Math.round((e.loaded / e.total) * 60)),
+  })
+  onProgress?.(100)
+  return data
+}
+
+export async function chatWithAssistant({ activeModule, documentName, moduleOutput, history, message }) {
+  const { data } = await api.post('/assistant/chat/', {
+    active_module: activeModule,
+    document_name: documentName,
+    module_output: moduleOutput ? JSON.stringify(moduleOutput) : null,
+    conversation_history: history.map(m => ({ role: m.role, content: m.content })),
+    message,
+  })
+  return data
+}
+
 export async function convertDocument(file, targetFormat, onProgress) {
   const form = new FormData()
   form.append('file', file)

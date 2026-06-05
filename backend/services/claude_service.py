@@ -98,6 +98,44 @@ async def translate(content, file_type: str, filename: str, target_language: str
     return response.content[0].text.strip()
 
 
+_QUIZ_SYSTEM = """You are an educational assessment expert. Generate quiz questions from a document and return ONLY valid JSON — no markdown, no explanation.
+
+Response schema:
+{
+  "questions": [
+    {
+      "question": "Question text",
+      "answer": "Answer text (1-3 sentences)"
+    }
+  ]
+}
+
+Guidelines:
+- Questions should test key concepts, facts, and relationships in the document
+- Answers should be concise but complete
+- Vary question types (factual, conceptual, analytical)
+- Generate all questions in the same language as the document"""
+
+
+async def generate_quiz(content, file_type: str, filename: str, num_questions: int = 5, api_key=None) -> dict:
+    if isinstance(content, list):
+        msg_content = [{"type": "text", "text": f"Generate {num_questions} quiz questions from this document '{filename}':"}]
+        for img_b64 in content[:5]:
+            msg_content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}})
+        messages = [{"role": "user", "content": msg_content}]
+    else:
+        truncated = content[:50_000]
+        messages = [{"role": "user", "content": f"Generate {num_questions} quiz questions from this {file_type.upper()} document named '{filename}':\n\n{truncated}"}]
+
+    response = await _client_for(api_key).messages.create(
+        model=MODEL,
+        max_tokens=2048,
+        system=_QUIZ_SYSTEM,
+        messages=messages,
+    )
+    return json.loads(response.content[0].text.strip())
+
+
 _QA_SYSTEM = """You are a document quality assurance expert. Analyze documents for issues and return ONLY valid JSON — no markdown, no explanation.
 
 Response schema:
@@ -118,6 +156,57 @@ Severity guide:
 - critical: unfilled placeholders ([NAME], {{FIELD}}, TBD, etc.), missing required sections, broken references
 - warning: grammar/spelling errors, date/number inconsistencies, contradicting statements
 - suggestion: style improvements, unclear phrasing, optional missing content"""
+
+
+_ASSISTANT_SYSTEM = """You are a strictly scoped assistant for DocFlow AI, a document processing application.
+
+YOUR ONLY ALLOWED TOPICS:
+1. How to use DocFlow AI and its modules (analyze, translate, convert, qa)
+2. Content and analysis of the document the user has uploaded in this session
+
+HARD RULES:
+- If the question is not about DocFlow AI or the uploaded document, respond ONLY with: "Solo puedo responder preguntas sobre DocFlow AI o sobre el documento que subiste." (or in the user's language).
+- Never answer general knowledge questions, coding help, math, current events, or anything unrelated to the app or the uploaded document.
+- Never pretend to be a general-purpose assistant.
+- Be concise: 1-3 sentences max.
+- Always answer in the same language the user writes in.
+- If the user clearly intends to use a different module, end your response with exactly: SUGGEST_MODULE:module_name (one of: analyze, translate, convert, qa)
+
+Available modules:
+- analyze: Document Intelligence — auto summary, entity extraction, quiz generator
+- translate: AI Translator — translate to 8 languages preserving layout
+- convert: Format Converter — PDF↔DOCX, PPTX→PDF, images→PDF
+- qa: QA Checker — detect placeholders, grammar errors, inconsistencies"""
+
+
+async def assistant_chat(active_module, document_name, module_output, history, message, api_key=None) -> dict:
+    context_parts = []
+    if active_module:
+        context_parts.append(f"Current module: {active_module}")
+    if document_name:
+        context_parts.append(f"Document: {document_name}")
+    if module_output:
+        context_parts.append(f"Module output:\n{module_output[:2000]}")
+    context_str = "\n".join(context_parts) if context_parts else "No document loaded."
+
+    system = f"{_ASSISTANT_SYSTEM}\n\nContext:\n{context_str}"
+    messages = [{"role": m["role"], "content": m["content"]} for m in history[-8:]]
+    messages.append({"role": "user", "content": message})
+
+    response = await _client_for(api_key).messages.create(
+        model=MODEL, max_tokens=512, system=system, messages=messages,
+    )
+
+    text = response.content[0].text.strip()
+    suggested = None
+    for mod in ['analyze', 'translate', 'convert', 'qa']:
+        marker = f"SUGGEST_MODULE:{mod}"
+        if marker in text:
+            suggested = mod
+            text = text.replace(marker, "").strip()
+            break
+
+    return {"answer": text, "suggested_module": suggested}
 
 
 async def qa_check(content, file_type: str, filename: str, api_key=None) -> dict:

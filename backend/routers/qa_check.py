@@ -2,9 +2,10 @@ import asyncio
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 
 from deps import get_api_key
+from limiter import limiter
 from services.ai_service import qa_check_document
 from services.document_service import SUPPORTED_EXTS, extract_content
 
@@ -13,7 +14,8 @@ MAX_SIZE = 50 * 1024 * 1024
 
 
 @router.post("/")
-async def qa_check(file: UploadFile = File(...), api_key: str | None = Depends(get_api_key)):
+@limiter.limit("10/minute")
+async def qa_check(request: Request, file: UploadFile = File(...), api_key: str | None = Depends(get_api_key)):
     file_bytes = await file.read()
 
     if len(file_bytes) > MAX_SIZE:

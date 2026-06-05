@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import FileDropzone from '../components/FileDropzone'
 import { qaCheckDocument } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAssistant } from '../contexts/AssistantContext'
 
 const ACCEPT = {
   'application/pdf': ['.pdf'],
@@ -18,7 +19,7 @@ const SEVERITY_STYLE = {
 }
 
 const CATEGORY_LABELS = {
-  placeholder:     'Placeholder sin completar',
+  placeholder:     'Campo sin completar',
   grammar:         'Gramática / Ortografía',
   inconsistency:   'Inconsistencia',
   missing_section: 'Sección faltante',
@@ -30,7 +31,10 @@ const STEPS = ['Cargando archivo...', 'Extrayendo contenido...', 'Analizando cal
 
 export default function QAChecker() {
   const { t } = useLanguage()
+  const { updateContext } = useAssistant()
   const [file, setFile] = useState(null)
+
+  useEffect(() => { updateContext({ activeModule: 'qa' }) }, [updateContext])
   const [status, setStatus] = useState('idle')
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
@@ -41,7 +45,8 @@ export default function QAChecker() {
 
   const handleFile = useCallback(f => {
     setFile(f); setResult(null); setError(null); setStatus('idle'); setProgress(0)
-  }, [])
+    updateContext({ documentName: f?.name || null, moduleOutput: null })
+  }, [updateContext])
 
   const handleCheck = async () => {
     setStatus('loading'); setProgress(5); setError(null)
@@ -50,6 +55,7 @@ export default function QAChecker() {
       const data = await qaCheckDocument(file, p => setProgress(p))
       setResult(data)
       setStatus('done')
+      updateContext({ moduleOutput: data.report })
     } catch (e) {
       setError(e.response?.data?.detail || t('qa_err'))
       setStatus('error')
@@ -63,11 +69,11 @@ export default function QAChecker() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">{t('qa_title')}</h2>
-        <p className="text-gray-500 mt-1">{t('qa_subtitle')}</p>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">{t('qa_title')}</h2>
+        <p className="text-slate-300 mt-1">{t('qa_subtitle')}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+      <div className="space-y-5">
         <FileDropzone onFile={handleFile} accept={ACCEPT} label={t('drop_label_qa')} />
 
         {file && (
@@ -87,17 +93,13 @@ export default function QAChecker() {
             disabled={status === 'loading'}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
           >
-            {status === 'loading' ? STEPS[stepIndex] : t('qa_btn')}
+            {status === 'loading' ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {STEPS[stepIndex]}
+              </span>
+            ) : t('qa_btn')}
           </button>
-        )}
-
-        {status === 'loading' && (
-          <div className="space-y-1">
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-xs text-gray-400 text-right">{progress}%</p>
-          </div>
         )}
 
         {error && (
