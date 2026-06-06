@@ -214,7 +214,26 @@ export default function Educator() {
           if (!createRes.ok) throw new Error()
           const form = await createRes.json()
 
-          const requests = selectedQuestions.map((q, i) => ({
+          // Step 1: enable quiz mode
+          const quizRes = await fetch(
+            `https://forms.googleapis.com/v1/forms/${form.formId}:batchUpdate`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                requests: [{
+                  updateSettings: {
+                    settings: { quizSettings: { isQuiz: true } },
+                    updateMask: 'quizSettings.isQuiz',
+                  },
+                }],
+              }),
+            }
+          )
+          if (!quizRes.ok) throw new Error()
+
+          // Step 2: add questions with correct answers
+          const itemRequests = selectedQuestions.map((q, i) => ({
             createItem: {
               item: {
                 title: q.question,
@@ -223,6 +242,12 @@ export default function Educator() {
                     required: true,
                     ...(isMC
                       ? {
+                          grading: {
+                            pointValue: 1,
+                            correctAnswers: {
+                              answers: [{ value: `${q.correct}) ${q.options[q.correct]}` }],
+                            },
+                          },
                           choiceQuestion: {
                             type: 'RADIO',
                             options: Object.entries(q.options).map(([k, v]) => ({ value: `${k}) ${v}` })),
@@ -242,7 +267,7 @@ export default function Educator() {
             {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ requests }),
+              body: JSON.stringify({ requests: itemRequests }),
             }
           )
           if (!batchRes.ok) throw new Error()
