@@ -5,8 +5,7 @@ import Translator from './pages/Translator'
 import Converter from './pages/Converter'
 import QAChecker from './pages/QAChecker'
 import Scanner from './pages/Scanner'
-import Educator from './pages/Educator'
-import { BookOpen, Camera, ChevronDown, FileOutput, FileSearch, FileText, Languages, ShieldCheck, Sparkles } from 'lucide-react'
+import { Camera, ChevronDown, FileOutput, FileSearch, FileText, Languages, ShieldCheck, Sparkles } from 'lucide-react'
 import { useLanguage } from './contexts/LanguageContext'
 import { AssistantProvider } from './contexts/AssistantContext'
 import MockBanner from './components/MockBanner'
@@ -14,7 +13,6 @@ import GlobalAssistant from './components/GlobalAssistant'
 
 const MODULES = [
   { path: '/analyze',   Icon: FileSearch,  color: 'blue',    labelKey: 'mod_analyze_label',   descKey: 'mod_analyze_desc',   actionKey: 'mod_analyze_action'   },
-  { path: '/educator',  Icon: BookOpen,    color: 'rose',    labelKey: 'mod_educator_label',  descKey: 'mod_educator_desc',  actionKey: 'mod_educator_action'  },
   { path: '/translate', Icon: Languages,   color: 'violet',  labelKey: 'mod_translate_label', descKey: 'mod_translate_desc', actionKey: 'mod_translate_action' },
   { path: '/scanner',   Icon: Camera,      color: 'cyan',    labelKey: 'mod_scanner_label',   descKey: 'mod_scanner_desc',   actionKey: 'mod_scanner_action'   },
   { path: '/qa',        Icon: ShieldCheck, color: 'amber',   labelKey: 'mod_qa_label',        descKey: 'mod_qa_desc',        actionKey: 'mod_qa_action'        },
@@ -131,7 +129,6 @@ export default function App() {
           <Route path="/convert"   element={<Converter />} />
           <Route path="/qa"        element={<QAChecker />} />
           <Route path="/scanner"   element={<Scanner />} />
-          <Route path="/educator"  element={<Educator />} />
         </Routes>
       </main>
       <GlobalAssistant />

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from routers import analyze, translate, convert, qa_check, assistant, scanner, educator
+from routers import analyze, translate, convert, qa_check, assistant, scanner
 from database import init_db
 from limiter import limiter
 
@@ -40,7 +40,6 @@ app.include_router(convert.router, prefix="/api/convert", tags=["convert"])
 app.include_router(qa_check.router, prefix="/api/qa", tags=["qa"])
 app.include_router(assistant.router, prefix="/api/assistant", tags=["assistant"])
 app.include_router(scanner.router, prefix="/api/scanner", tags=["scanner"])
-app.include_router(educator.router, prefix="/api/educator", tags=["educator"])
 
 
 @app.get("/health")
